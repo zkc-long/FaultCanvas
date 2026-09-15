@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MoonBit
+        shell: bash
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Show toolchain versions
+        run: moon version --all
+
+      - name: Resolve dependencies
+        run: moon update
+
+      - name: Verify formatting
+        shell: bash
+        run: |
+          moon fmt
+          git diff --exit-code
+
+      - name: Test portable decision engine
+        run: |
+          moon check --target wasm-gc --deny-warn core matcher scenario fault config runtime report
+          moon test --target wasm-gc --deny-warn core matcher scenario fault config runtime report
+
+      - name: Build and test native proxy
+        run: |
+          moon check --target native --deny-warn
+          moon test --target native --deny-warn
+
+      - name: Validate publication package
+        run: moon package --list
