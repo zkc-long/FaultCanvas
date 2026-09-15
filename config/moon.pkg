@@ -1,0 +1,7 @@
+import {
+  "moonbitlang/core/json",
+  "zkc-long/faultcanvas/core",
+  "zkc-long/faultcanvas/fault",
+  "zkc-long/faultcanvas/matcher",
+  "zkc-long/faultcanvas/scenario",
+}

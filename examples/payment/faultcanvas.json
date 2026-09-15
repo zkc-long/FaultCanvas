@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "listen": "127.0.0.1:8080",
+  "upstream": "http://127.0.0.1:9000",
+  "session_header": "X-Checkout-Id",
+  "initial_phase": "degraded",
+  "transitions": [
+    {
+      "from": "degraded",
+      "to": "healthy",
+      "on_hit": 2
+    }
+  ],
+  "rules": [
+    {
+      "id": "checkout-retries-are-unavailable",
+      "priority": 100,
+      "phase": "degraded",
+      "match": {
+        "method": "POST",
+        "path": "/payments"
+      },
+      "actions": [
+        {
+          "type": "delay",
+          "ms": 120
+        },
+        {
+          "type": "stub",
+          "status": 503,
+          "body": "{\"error\":\"temporary_unavailable\"}"
+        }
+      ]
+    },
+    {
+      "id": "payments-pass-through-after-recovery",
+      "priority": 10,
+      "phase": "healthy",
+      "match": {
+        "method": "POST",
+        "path": "/payments"
+      },
+      "actions": [
+        {
+          "type": "passthrough"
+        }
+      ]
+    }
+  ]
+}
