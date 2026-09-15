@@ -30,3 +30,7 @@ keywords = [
 preferred_target = "native"
 
 description = "Programmable HTTP fault proxy and stateful service virtualization gateway for MoonBit"
+
+import {
+  "moonbitlang/async@0.21.3",
+}

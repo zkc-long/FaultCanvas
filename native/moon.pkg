@@ -1,0 +1,15 @@
+import {
+  "moonbitlang/async",
+  "moonbitlang/async/http",
+  "moonbitlang/async/io",
+  "moonbitlang/async/socket",
+  "zkc-long/faultcanvas/config",
+  "zkc-long/faultcanvas/core",
+  "zkc-long/faultcanvas/fault",
+  "zkc-long/faultcanvas/report",
+  "zkc-long/faultcanvas/runtime",
+}
+
+options(
+  targets: { "server.mbt": [ "native" ], "server_test.mbt": [ "native" ] },
+)
