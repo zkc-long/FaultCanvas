@@ -1,5 +1,12 @@
-// import {
-//   "zkc-long/faultcanvas" @lib,
-// }
+import {
+  "moonbitlang/async",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/io",
+  "moonbitlang/core/argparse",
+  "zkc-long/faultcanvas/config",
+  "zkc-long/faultcanvas/core",
+  "zkc-long/faultcanvas/native",
+  "zkc-long/faultcanvas/runtime",
+}
 
 pkgtype(kind: "executable")
