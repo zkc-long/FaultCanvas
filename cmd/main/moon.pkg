@@ -1,0 +1,5 @@
+// import {
+//   "zkc-long/faultcanvas" @lib,
+// }
+
+pkgtype(kind: "executable")
