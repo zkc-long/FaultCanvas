@@ -6,6 +6,7 @@ import {
   "zkc-long/faultcanvas/config",
   "zkc-long/faultcanvas/core",
   "zkc-long/faultcanvas/fault",
+  "zkc-long/faultcanvas/policy",
   "zkc-long/faultcanvas/report",
   "zkc-long/faultcanvas/runtime",
 }

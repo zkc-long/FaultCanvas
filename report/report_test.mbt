@@ -34,3 +34,20 @@ test "journal produces machine-readable JSON" {
     "{\"events\":[{\"sequence\":1,\"session\":\"checkout-7\",\"phase_before\":\"degraded\",\"phase_after\":\"healthy\",\"rule_id\":\"retry\",\"elapsed_ms\":120,\"outcome\":{\"kind\":\"response\",\"status\":503}}]}",
   )
 }
+
+///|
+test "policy-aware reports redact failure details" {
+  let journal = Journal::new(2)
+  let decision = @runtime.Decision::fallback("session-1", "phase")
+  journal.record(decision, UpstreamFailure("token=secret-value"), 12)
+  assert_true(
+    journal
+    .to_text_with_policy(@policy.Policy::safe_defaults())
+    .contains("<redacted-detail>"),
+  )
+  assert_true(
+    journal
+    .to_json_with_policy(@policy.Policy::safe_defaults())
+    .contains("<redacted-detail>"),
+  )
+}

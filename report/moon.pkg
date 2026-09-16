@@ -1,3 +1,4 @@
 import {
+  "zkc-long/faultcanvas/policy",
   "zkc-long/faultcanvas/runtime",
 }

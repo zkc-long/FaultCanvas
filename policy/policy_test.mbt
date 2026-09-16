@@ -58,3 +58,17 @@ test "invalid limits are rejected before policy construction" {
   assert_eq(Policy::new(0, 1, 1, 1, []), Err(InvalidLimit("max_headers", 0)))
   assert_eq(Policy::new(1, 1, 1, 1, ["  "]), Err(EmptyRedactionHeader))
 }
+
+///|
+test "free-form error details redact credential markers" {
+  let policy = Policy::safe_defaults()
+  assert_eq(policy.redact_free_text("timeout after 20ms"), "timeout after 20ms")
+  assert_eq(
+    policy.redact_free_text("upstream token=abc123"),
+    "<redacted-detail>",
+  )
+  assert_eq(
+    policy.redact_free_text("authorization: Bearer abc"),
+    "<redacted-detail>",
+  )
+}

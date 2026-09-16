@@ -62,6 +62,19 @@ fn outcome_text(outcome : Outcome) -> String {
 }
 
 ///|
+fn outcome_text_with_policy(
+  policy : @policy.Policy,
+  outcome : Outcome,
+) -> String {
+  match outcome {
+    Response(status) => "response:" + status.to_string()
+    Aborted(reason) => "aborted:" + policy.redact_free_text(reason)
+    UpstreamFailure(reason) =>
+      "upstream_failure:" + policy.redact_free_text(reason)
+  }
+}
+
+///|
 fn rule_text(rule_id : String?) -> String {
   match rule_id {
     Some(value) => value
@@ -95,6 +108,34 @@ pub fn Journal::to_text(self : Journal) -> String {
 }
 
 ///|
+/// Render a text report with credentials removed from free-form failures.
+pub fn Journal::to_text_with_policy(
+  self : Journal,
+  policy : @policy.Policy,
+) -> String {
+  let lines : Array[String] = []
+  for event in self.entries {
+    lines.push(
+      "#" +
+      event.sequence.to_string() +
+      " session=" +
+      event.decision.session +
+      " rule=" +
+      rule_text(event.decision.rule_id) +
+      " phase=" +
+      event.decision.phase_before +
+      "->" +
+      event.decision.phase_after +
+      " outcome=" +
+      outcome_text_with_policy(policy, event.outcome) +
+      " elapsed_ms=" +
+      event.elapsed_ms.to_string(),
+    )
+  }
+  lines.join("\n")
+}
+
+///|
 fn outcome_json(outcome : Outcome) -> Json {
   match outcome {
     Response(status) =>
@@ -116,6 +157,27 @@ fn outcome_json(outcome : Outcome) -> Json {
 }
 
 ///|
+fn outcome_json_with_policy(policy : @policy.Policy, outcome : Outcome) -> Json {
+  match outcome {
+    Response(status) =>
+      Json::object({
+        "kind": Json::string("response"),
+        "status": Json::number(status.to_double()),
+      })
+    Aborted(reason) =>
+      Json::object({
+        "kind": Json::string("aborted"),
+        "reason": Json::string(policy.redact_free_text(reason)),
+      })
+    UpstreamFailure(reason) =>
+      Json::object({
+        "kind": Json::string("upstream_failure"),
+        "reason": Json::string(policy.redact_free_text(reason)),
+      })
+  }
+}
+
+///|
 /// Machine-readable report with deterministic event ordering.
 pub fn Journal::to_json(self : Journal) -> String {
   let events : Array[Json] = []
@@ -132,6 +194,32 @@ pub fn Journal::to_json(self : Journal) -> String {
         },
         "elapsed_ms": Json::number(event.elapsed_ms.to_double()),
         "outcome": outcome_json(event.outcome),
+      }),
+    )
+  }
+  Json::object({ "events": Json::array(events) }).stringify()
+}
+
+///|
+/// Render a machine-readable report with credentials removed from failures.
+pub fn Journal::to_json_with_policy(
+  self : Journal,
+  policy : @policy.Policy,
+) -> String {
+  let events : Array[Json] = []
+  for event in self.entries {
+    events.push(
+      Json::object({
+        "sequence": Json::number(event.sequence.to_double()),
+        "session": Json::string(event.decision.session),
+        "phase_before": Json::string(event.decision.phase_before),
+        "phase_after": Json::string(event.decision.phase_after),
+        "rule_id": match event.decision.rule_id {
+          Some(value) => Json::string(value)
+          None => Json::null()
+        },
+        "elapsed_ms": Json::number(event.elapsed_ms.to_double()),
+        "outcome": outcome_json_with_policy(policy, event.outcome),
       }),
     )
   }

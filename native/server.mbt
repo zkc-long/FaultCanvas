@@ -61,6 +61,16 @@ fn reason_for(status : Int) -> String {
 }
 
 ///|
+fn policy_error_status(error : @policy.PolicyError) -> Int {
+  match error {
+    @policy.TooManyHeaders(_, _) => 431
+    @policy.RequestBodyTooLarge(_, _) => 413
+    @policy.NonLoopbackListen(_) => 400
+    @policy.InvalidLimit(_, _) | @policy.EmptyRedactionHeader => 400
+  }
+}
+
+///|
 async fn send_core_response(
   connection : @http.ServerConnection,
   response : @core.HttpResponse,
@@ -81,6 +91,19 @@ async fn handle(
 ) -> Unit {
   let raw_body = body_reader.read_all()
   let normalized = normalize(request, raw_body.text())
+  match config.policy.validate_request(normalized) {
+    Err(error) => {
+      let status = policy_error_status(error)
+      let decision = @runtime.Decision::fallback("invalid", "invalid")
+      send_core_response(
+        connection,
+        @core.HttpResponse::new(status, [], "request rejected by policy"),
+      )
+      journal.record(decision, @report.Response(status), 0)
+      return
+    }
+    Ok(_) => ()
+  }
   match normalized.validate(@core.RequestLimits::safe_defaults()) {
     Err(_) => {
       let decision = @runtime.Decision::fallback("invalid", "invalid")
@@ -103,7 +126,9 @@ async fn handle(
       journal.record(decision, @report.Aborted(reason), decision.plan.delay_ms)
     }
     @fault.Fixed(response) => {
-      let response = decision.plan.transform_response(response)
+      let response = config.policy.filter_response(
+        decision.plan.transform_response(response),
+      )
       send_core_response(connection, response)
       journal.record(
         decision,
@@ -132,6 +157,7 @@ async fn handle(
       let transformed = decision.plan.transform_response(
         @core.HttpResponse::new(response.code, [], upstream_body.text()),
       )
+      let transformed = config.policy.filter_response(transformed)
       send_core_response(connection, transformed)
       journal.record(
         decision,
@@ -161,6 +187,6 @@ pub async fn run(
 /// Bind and run a loopback-safe configured proxy indefinitely.
 pub async fn serve(config : @config.Config) -> Unit {
   let server = @http.Server(@socket.Addr::parse(config.listen))
-  let journal = @report.Journal::new(1_000)
+  let journal = @report.Journal::new(config.policy.max_events())
   run(server, config, journal)
 }

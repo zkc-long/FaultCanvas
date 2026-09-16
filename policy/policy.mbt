@@ -162,6 +162,24 @@ pub fn Policy::redact_value(
 }
 
 ///|
+/// Redact common credential markers in free-form error text. The policy is
+/// intentionally conservative: it replaces the complete detail when a marker
+/// appears rather than attempting to parse arbitrary application payloads.
+pub fn Policy::redact_free_text(self : Policy, text : String) -> String {
+  ignore(self)
+  let lower = text.to_lower()
+  if lower.contains("token=") ||
+    lower.contains("password=") ||
+    lower.contains("secret=") ||
+    lower.contains("authorization:") ||
+    lower.contains("cookie:") {
+    "<redacted-detail>"
+  } else {
+    text
+  }
+}
+
+///|
 pub fn Policy::sanitize_headers(
   self : Policy,
   headers : Array[@core.Header],
