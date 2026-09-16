@@ -3,6 +3,15 @@
   "listen": "127.0.0.1:8080",
   "upstream": "http://127.0.0.1:9000",
   "session_header": "X-Checkout-Id",
+  "limits": {
+    "max_headers": 64,
+    "max_request_body_chars": 65536,
+    "max_response_body_chars": 65536,
+    "max_events": 1000
+  },
+  "security": {
+    "redact_headers": ["X-Payment-Token", "X-Customer-Secret"]
+  },
   "initial_phase": "degraded",
   "transitions": [
     {

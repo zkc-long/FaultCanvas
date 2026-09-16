@@ -14,6 +14,7 @@ pub(all) struct Config {
   initial_phase : String
   transitions : Array[@scenario.Transition]
   rules : Array[ConfiguredRule]
+  policy : @policy.Policy
 } derive(Debug, Eq)
 
 ///|
@@ -30,6 +31,7 @@ pub(all) enum ConfigError {
   DuplicateRuleId(String)
   InvalidAction(String)
   InvalidTransition(String)
+  InvalidPolicy(String)
 } derive(Debug, Eq)
 
 ///|
@@ -109,6 +111,95 @@ fn optional_integer(
   match object.get(key) {
     None => Ok(fallback)
     Some(value) => integer_at(value, key)
+  }
+}
+
+///|
+fn decode_redaction_headers(value : Json) -> Result[Array[String], ConfigError] {
+  let values = match array_at(value, "security.redact_headers") {
+    Ok(values) => values
+    Err(error) => return Err(error)
+  }
+  let headers : Array[String] = []
+  for item in values {
+    match string_at(item, "security.redact_headers[]") {
+      Ok(value) => headers.push(value)
+      Err(error) => return Err(error)
+    }
+  }
+  Ok(headers)
+}
+
+///|
+fn decode_policy(
+  root : Map[String, Json],
+  listen : String,
+) -> Result[@policy.Policy, ConfigError] {
+  let defaults = @policy.Policy::safe_defaults()
+  let empty_limits : Map[String, Json] = Map([])
+  let limits = match root.get("limits") {
+    None => empty_limits
+    Some(value) =>
+      match object_at(value, "limits") {
+        Ok(object) => object
+        Err(error) => return Err(error)
+      }
+  }
+  let max_headers = match
+    optional_integer(limits, "max_headers", defaults.max_headers()) {
+    Ok(value) => value
+    Err(error) => return Err(error)
+  }
+  let max_request_body_chars = match
+    optional_integer(
+      limits,
+      "max_request_body_chars",
+      defaults.max_request_body_chars(),
+    ) {
+    Ok(value) => value
+    Err(error) => return Err(error)
+  }
+  let max_response_body_chars = match
+    optional_integer(
+      limits,
+      "max_response_body_chars",
+      defaults.max_response_body_chars(),
+    ) {
+    Ok(value) => value
+    Err(error) => return Err(error)
+  }
+  let max_events = match
+    optional_integer(limits, "max_events", defaults.max_events()) {
+    Ok(value) => value
+    Err(error) => return Err(error)
+  }
+  let redact_headers = match root.get("security") {
+    None => defaults.redact_headers
+    Some(value) => {
+      let security = match object_at(value, "security") {
+        Ok(object) => object
+        Err(error) => return Err(error)
+      }
+      match security.get("redact_headers") {
+        None => defaults.redact_headers
+        Some(value) =>
+          match decode_redaction_headers(value) {
+            Ok(headers) => headers
+            Err(error) => return Err(error)
+          }
+      }
+    }
+  }
+  let policy = match
+    @policy.Policy::new(
+      max_headers, max_request_body_chars, max_response_body_chars, max_events, redact_headers,
+    ) {
+    Ok(policy) => policy
+    Err(_) => return Err(InvalidPolicy("limits or security are invalid"))
+  }
+  match policy.listen_is_safe(listen) {
+    Ok(_) => Ok(policy)
+    Err(_) => Err(InvalidPolicy("listen must be loopback"))
   }
 }
 
@@ -419,6 +510,10 @@ pub fn parse(text : String) -> Result[Config, ConfigError] {
     Ok(None) => "default"
     Err(error) => return Err(error)
   }
+  let policy = match decode_policy(root, listen) {
+    Ok(policy) => policy
+    Err(error) => return Err(error)
+  }
   let transition_values = match root.get("transitions") {
     None => []
     Some(value) =>
@@ -463,5 +558,6 @@ pub fn parse(text : String) -> Result[Config, ConfigError] {
     initial_phase,
     transitions,
     rules,
+    policy,
   })
 }

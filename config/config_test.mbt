@@ -27,6 +27,7 @@ test "decodes a versioned stateful service-virtualization configuration" {
     @fault.Delay(25),
     @fault.Stub(@core.HttpResponse::new(503, [], "retry")),
   ])
+  assert_eq(config.policy.max_events(), 1000)
 }
 
 ///|
@@ -62,5 +63,29 @@ test "rejects unsupported upstream schemes and invalid action plans" {
     ) {
     Err(InvalidAction(_)) => ()
     _ => fail("conflicting actions must be rejected")
+  }
+}
+
+///|
+test "decodes custom limits and rejects public listeners" {
+  let config = parse(
+    (
+      #|{"version":1,"upstream":"http://127.0.0.1","limits":{"max_headers":4,"max_request_body_chars":64,"max_response_body_chars":32,"max_events":9},"security":{"redact_headers":["X-Customer-Secret"]},"rules":[]}
+    ),
+  ).unwrap()
+  assert_eq(config.policy.max_headers(), 4)
+  assert_eq(config.policy.max_response_body_chars(), 32)
+  assert_eq(
+    config.policy.header_disposition("X-Customer-Secret"),
+    @policy.Redact,
+  )
+  match
+    parse(
+      (
+        #|{"version":1,"listen":"0.0.0.0:8080","upstream":"http://127.0.0.1","rules":[]}
+      ),
+    ) {
+    Err(InvalidPolicy(_)) => ()
+    _ => fail("public listeners must be rejected by default")
   }
 }

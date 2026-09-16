@@ -3,5 +3,6 @@ import {
   "zkc-long/faultcanvas/core",
   "zkc-long/faultcanvas/fault",
   "zkc-long/faultcanvas/matcher",
+  "zkc-long/faultcanvas/policy",
   "zkc-long/faultcanvas/scenario",
 }
