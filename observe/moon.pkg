@@ -1,0 +1,4 @@
+import {
+  "zkc-long/faultcanvas/report",
+  "zkc-long/faultcanvas/runtime",
+}
