@@ -7,3 +7,6 @@
 - Versioned JSON scenarios and payment retry example.
 - Native HTTP/1.1 adapter and CLI.
 - Bounded text/JSON evidence reporting.
+- Integrated safety policy with loopback enforcement, body/header limits and
+  redacted report renderers.
+- Event filtering, failure-rate and latency percentile summaries.

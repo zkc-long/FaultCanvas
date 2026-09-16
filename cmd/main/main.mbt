@@ -42,6 +42,30 @@ fn print_decision(decision : @runtime.Decision) -> Unit {
 }
 
 ///|
+fn simulated_outcome(decision : @runtime.Decision) -> @report.Outcome {
+  match decision.plan.source {
+    @fault.Fixed(response) => @report.Response(response.status)
+    @fault.ConnectionAbort(reason) => @report.Aborted(reason)
+    @fault.Upstream => @report.Response(200)
+  }
+}
+
+///|
+fn print_simulation_stats(
+  config : @config.Config,
+  arguments : Array[String],
+) -> Unit {
+  let engine = @runtime.Engine::new(config)
+  let journal = @report.Journal::new(config.policy.max_events())
+  for sequence = 1; sequence <= 3; sequence = sequence + 1 {
+    let decision = engine.decide(simulated_request(arguments))
+    journal.record(decision, simulated_outcome(decision), sequence * 10)
+  }
+  let stats = @observe.summarize(journal.events(), @observe.EventFilter::any())
+  println(stats.to_json())
+}
+
+///|
 /// Native FaultCanvas command line interface.
 ///
 /// Usage:
@@ -49,6 +73,8 @@ fn print_decision(decision : @runtime.Decision) -> Unit {
 /// `faultcanvas simulate CONFIG [METHOD PATH]`
 /// `faultcanvas serve CONFIG`
 /// `faultcanvas report CONFIG`
+/// `faultcanvas stats CONFIG [METHOD PATH]`
+/// `faultcanvas redact CONFIG TEXT...`
 async fn run_cli() -> Unit {
   let matches = @argparse.Command(
     "faultcanvas",
@@ -85,6 +111,8 @@ async fn run_cli() -> Unit {
         config.transitions.length().to_string() +
         "}",
       )
+    "stats" => print_simulation_stats(config, arguments)
+    "redact" => println(config.policy.redact_free_text(arguments.join(" ")))
     _ => fail("unknown command: " + command)
   }
 }

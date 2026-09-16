@@ -36,8 +36,8 @@ jobs:
 
       - name: Test portable decision engine
         run: |
-          moon check --target wasm-gc --deny-warn core matcher scenario fault config runtime report
-          moon test --target wasm-gc --deny-warn core matcher scenario fault config runtime report
+          moon check --target wasm-gc --deny-warn core matcher scenario fault policy config runtime report observe
+          moon test --target wasm-gc --deny-warn core matcher scenario fault policy config runtime report observe
 
       - name: Build and test native proxy
         run: |

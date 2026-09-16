@@ -13,6 +13,10 @@
    upstream. Repeat with a new header value to prove session isolation.
 6. Display the text or JSON journal to show rule ID, phase transition, outcome
    and elapsed time.
+7. Run `faultcanvas stats examples/payment/faultcanvas.json POST /payments` to
+   show deterministic response counts and p50/p95 latency summaries. Run
+   `faultcanvas redact examples/payment/faultcanvas.json "token=demo"` to show
+   that sensitive free-form details are replaced before reporting.
 
 The key judging point is that this is not an in-process mock: the client talks
 to a real HTTP listener while FaultCanvas applies a stateful fault policy.

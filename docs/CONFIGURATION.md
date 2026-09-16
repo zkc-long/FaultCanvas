@@ -15,6 +15,19 @@ fault-plan error rejects the complete configuration before a listener starts.
 | `transitions` | no | Ordered phase transitions. |
 | `rules` | yes | Ordered fault rules. IDs must be unique. |
 
+## Safety policy
+
+The optional `limits` object accepts `max_headers`,
+`max_request_body_chars`, `max_response_body_chars` and `max_events`. Values
+default to 128 headers, 1 MiB request/response bodies and 1000 retained events.
+The optional `security.redact_headers` array adds case-insensitive header names
+to the built-in authorization/cookie/token redaction set. Invalid limits are
+rejected before the listener opens.
+
+FaultCanvas accepts loopback listeners (`127.0.0.1`, `localhost` and `::1`)
+only in the competition profile. Public binding must be an explicit future
+deployment decision, not an accidental configuration typo.
+
 ## Rules
 
 Each rule has `id`, optional integer `priority`, optional `phase`, optional

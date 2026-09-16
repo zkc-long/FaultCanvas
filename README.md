@@ -29,7 +29,7 @@ network. The `native` package owns sockets and the HTTP adapter.
 - session-keyed phases and hit-count transitions
 - bounded runtime journal with text and JSON reports
 - a reusable Mooncakes-ready library plus `check`, `simulate`, `serve` and
-  `report` CLI commands
+  `report`, `stats` and `redact` CLI commands
 
 Out of scope: TLS interception, HTTP/2, gRPC, WebSocket, public-by-default
 listeners, distributed control planes and browser UI.
@@ -47,6 +47,8 @@ Validate the payment retry scenario:
 ```sh
 moon run cmd/main -- check examples/payment/faultcanvas.json
 moon run cmd/main -- simulate examples/payment/faultcanvas.json POST /payments
+moon run cmd/main -- stats examples/payment/faultcanvas.json POST /payments
+moon run cmd/main -- redact examples/payment/faultcanvas.json "upstream token=demo"
 ```
 
 Start a local HTTP upstream on `127.0.0.1:9000`, then run the proxy:
@@ -57,6 +59,10 @@ moon run cmd/main -- serve examples/payment/faultcanvas.json
 
 The first two `POST /payments` interactions for one `X-Checkout-Id` session
 receive delayed 503 responses. The third is passed through to the upstream.
+
+`stats` runs the same deterministic scenario three times and prints latency and
+failure counters. `redact` demonstrates the exact free-text redaction policy
+used by report renderers.
 
 The native adapter requires a C compiler (Clang, GCC, or MSVC) available to
 MoonBit. See [Configuration](docs/CONFIGURATION.md) for the exact schema and
