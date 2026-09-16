@@ -99,6 +99,9 @@ pub fn Policy::listen_is_safe(
   listen : String,
 ) -> Result[Unit, PolicyError] {
   ignore(self)
+  if listen.has_prefix("[::1]") || listen == "::1" {
+    return Ok(())
+  }
   let host = match listen.find(":") {
     Some(index) => listen[:index]
     None => listen

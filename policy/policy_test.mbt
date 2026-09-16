@@ -47,6 +47,7 @@ test "listen policy only accepts loopback addresses" {
   let policy = Policy::safe_defaults()
   assert_eq(policy.listen_is_safe("127.0.0.1:8080"), Ok(()))
   assert_eq(policy.listen_is_safe("localhost:8080"), Ok(()))
+  assert_eq(policy.listen_is_safe("[::1]:8080"), Ok(()))
   assert_eq(
     policy.listen_is_safe("0.0.0.0:8080"),
     Err(NonLoopbackListen("0.0.0.0:8080")),
