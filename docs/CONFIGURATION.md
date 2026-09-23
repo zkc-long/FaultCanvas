@@ -75,3 +75,44 @@ the `healthy` phase is active:
 ```
 
 Use `examples/payment/faultcanvas.json` as a complete runnable scenario.
+
+## Deterministic verification suites
+
+`faultcanvas verify CONFIG SUITE.json` replays a request sequence against a
+fresh in-memory engine. This checks stateful transitions and response actions
+without starting a listener or contacting the configured upstream. The suite's
+optional `upstream_status` field (default `200`) is the response used to model
+successful passthrough steps.
+
+Each step has a unique `id`, a full request (`method`, `path`, optional `query`,
+`headers` and `body`) and optional assertions. Query and header entries are
+arrays of `{ "name": "…", "value": "…" }`; this preserves duplicate headers.
+Assertions may check `rule_id`, `phase_before`, `phase_after`, `outcome`
+(`response` or `aborted`), `status`, `body_contains` and `delay_ms`.
+
+```json
+{
+  "version": 1,
+  "steps": [
+    {
+      "id": "first-retry",
+      "request": {
+        "method": "POST",
+        "path": "/payments",
+        "headers": [{ "name": "X-Checkout-Id", "value": "demo-order" }]
+      },
+      "expect": {
+        "rule_id": "checkout-retries-are-unavailable",
+        "phase_before": "degraded",
+        "status": 503,
+        "delay_ms": 120
+      }
+    }
+  ]
+}
+```
+
+Steps run in order and share scenario state, while each CLI invocation starts
+from a clean state. A failed assertion exits non-zero. The suite models the
+decision engine; use the native loopback tests and the `serve` demo to verify
+real HTTP transport behavior.

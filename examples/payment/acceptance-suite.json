@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "upstream_status": 200,
+  "steps": [
+    {
+      "id": "attempt-1-injected-503",
+      "request": {
+        "method": "POST",
+        "path": "/payments",
+        "headers": [{ "name": "X-Checkout-Id", "value": "acceptance-order-1" }],
+        "body": "{\"amount\":1000}"
+      },
+      "expect": {
+        "rule_id": "checkout-retries-are-unavailable",
+        "phase_before": "degraded",
+        "phase_after": "degraded",
+        "outcome": "response",
+        "status": 503,
+        "body_contains": "temporary_unavailable",
+        "delay_ms": 120
+      }
+    },
+    {
+      "id": "attempt-2-injected-503-and-recovery-transition",
+      "request": {
+        "method": "POST",
+        "path": "/payments",
+        "headers": [{ "name": "X-Checkout-Id", "value": "acceptance-order-1" }],
+        "body": "{\"amount\":1000}"
+      },
+      "expect": {
+        "rule_id": "checkout-retries-are-unavailable",
+        "phase_before": "degraded",
+        "phase_after": "healthy",
+        "status": 503,
+        "delay_ms": 120
+      }
+    },
+    {
+      "id": "attempt-3-passes-through-after-recovery",
+      "request": {
+        "method": "POST",
+        "path": "/payments",
+        "headers": [{ "name": "X-Checkout-Id", "value": "acceptance-order-1" }],
+        "body": "{\"amount\":1000}"
+      },
+      "expect": {
+        "rule_id": "payments-pass-through-after-recovery",
+        "phase_before": "healthy",
+        "phase_after": "healthy",
+        "outcome": "response",
+        "status": 200,
+        "delay_ms": 0
+      }
+    },
+    {
+      "id": "another-checkout-starts-isolated",
+      "request": {
+        "method": "POST",
+        "path": "/payments",
+        "headers": [{ "name": "X-Checkout-Id", "value": "acceptance-order-2" }],
+        "body": "{\"amount\":2500}"
+      },
+      "expect": {
+        "rule_id": "checkout-retries-are-unavailable",
+        "phase_before": "degraded",
+        "phase_after": "degraded",
+        "status": 503
+      }
+    }
+  ]
+}

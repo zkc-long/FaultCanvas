@@ -29,7 +29,7 @@ network. The `native` package owns sockets and the HTTP adapter.
 - session-keyed phases and hit-count transitions
 - bounded runtime journal with text and JSON reports
 - a reusable Mooncakes-ready library plus `check`, `simulate`, `serve` and
-  `report`, `stats` and `redact` CLI commands
+  `report`, `stats`, `redact` and assertion-based `verify` CLI commands
 
 Out of scope: TLS interception, HTTP/2, gRPC, WebSocket, public-by-default
 listeners, distributed control planes and browser UI.
@@ -39,7 +39,7 @@ listeners, distributed control planes and browser UI.
 Install MoonBit, then run the portable test suite:
 
 ```sh
-moon test --target wasm-gc --deny-warn core matcher scenario fault config runtime report
+moon test --target wasm-gc --deny-warn core matcher scenario fault config runtime report observe policy verify
 ```
 
 Validate the payment retry scenario:
@@ -49,6 +49,7 @@ moon run cmd/main -- check examples/payment/faultcanvas.json
 moon run cmd/main -- simulate examples/payment/faultcanvas.json POST /payments
 moon run cmd/main -- stats examples/payment/faultcanvas.json POST /payments
 moon run cmd/main -- redact examples/payment/faultcanvas.json "upstream token=demo"
+moon run cmd/main -- verify examples/payment/faultcanvas.json examples/payment/acceptance-suite.json
 ```
 
 Start a local HTTP upstream on `127.0.0.1:9000`, then run the proxy:
@@ -63,6 +64,14 @@ receive delayed 503 responses. The third is passed through to the upstream.
 `stats` runs the same deterministic scenario three times and prints latency and
 failure counters. `redact` demonstrates the exact free-text redaction policy
 used by report renderers.
+
+`verify` replays an ordered request suite through a fresh copy of the same
+scenario engine. It checks expected rules, phase transitions, fault outcomes,
+response status/body fragments and delay values without opening sockets. A
+failed assertion prints the mismatched fields and exits with a non-zero status,
+so the same scenario can be used locally or in CI. The sample suite exercises
+two degraded payment attempts followed by recovery and verifies session
+isolation.
 
 The native adapter requires a C compiler (Clang, GCC, or MSVC) available to
 MoonBit. See [Configuration](docs/CONFIGURATION.md) for the exact schema and
@@ -80,6 +89,7 @@ MoonBit. See [Configuration](docs/CONFIGURATION.md) for the exact schema and
 | `runtime` | Pure request-to-decision orchestration |
 | `report` | Bounded evidence journal and renderers |
 | `native` | HTTP/1.1 server/upstream adapter |
+| `verify` | Deterministic, assertion-based scenario replay for CI and acceptance |
 | `cmd/main` | Native CLI executable |
 
 ## License

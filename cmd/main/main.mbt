@@ -14,6 +14,19 @@ async fn load_config(path : String) -> @config.Config {
 }
 
 ///|
+async fn load_suite(path : String) -> @verify.Suite {
+  let file = @fs.open(path, mode=ReadOnly) catch {
+    _ => fail("cannot open verification suite: " + path)
+  }
+  defer file.close()
+  let text = file.read_all().text()
+  match @verify.parse(text) {
+    Ok(suite) => suite
+    Err(_) => fail("invalid FaultCanvas verification suite: " + path)
+  }
+}
+
+///|
 fn simulated_request(arguments : Array[String]) -> @core.HttpRequest {
   match arguments {
     [verb, path, ..] => @core.HttpRequest::new(verb, path, [], [], "")
@@ -75,6 +88,7 @@ fn print_simulation_stats(
 /// `faultcanvas report CONFIG`
 /// `faultcanvas stats CONFIG [METHOD PATH]`
 /// `faultcanvas redact CONFIG TEXT...`
+/// `faultcanvas verify CONFIG SUITE.json`
 async fn run_cli() -> Unit {
   let matches = @argparse.Command(
     "faultcanvas",
@@ -113,13 +127,22 @@ async fn run_cli() -> Unit {
       )
     "stats" => print_simulation_stats(config, arguments)
     "redact" => println(config.policy.redact_free_text(arguments.join(" ")))
+    "verify" => {
+      guard arguments is [suite_path] else {
+        fail("verify expects one suite path: verify CONFIG SUITE.json")
+      }
+      let suite = load_suite(suite_path)
+      let report = @verify.run(config, suite)
+      println(report.to_text())
+      if !report.succeeded() {
+        fail("verification suite failed")
+      }
+    }
     _ => fail("unknown command: " + command)
   }
 }
 
 ///|
 async fn main {
-  run_cli() catch {
-    _ => println("faultcanvas: command failed")
-  }
+  run_cli()
 }

@@ -3,7 +3,10 @@
 1. Show the payment configuration and point out `initial_phase: degraded`, the
    `on_hit: 2` transition, and the separate healthy passthrough rule.
 2. Run `faultcanvas check examples/payment/faultcanvas.json` to show that the
-   scenario is validated before any port is opened.
+   scenario is validated before any port is opened. Then run
+   `faultcanvas verify examples/payment/faultcanvas.json examples/payment/acceptance-suite.json`
+   to replay the full failure/recovery sequence and check every expected rule,
+   phase and response status.
 3. Run `faultcanvas simulate examples/payment/faultcanvas.json POST /payments`.
    Explain that the selected rule is deterministic and produces a delayed 503.
 4. Start a tiny upstream on port 9000 and run `faultcanvas serve

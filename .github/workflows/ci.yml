@@ -36,13 +36,16 @@ jobs:
 
       - name: Test portable decision engine
         run: |
-          moon check --target wasm-gc --deny-warn core matcher scenario fault policy config runtime report observe
-          moon test --target wasm-gc --deny-warn core matcher scenario fault policy config runtime report observe
+          moon check --target wasm-gc --deny-warn core matcher scenario fault policy config runtime report observe verify
+          moon test --target wasm-gc --deny-warn core matcher scenario fault policy config runtime report observe verify
 
       - name: Build and test native proxy
         run: |
           moon check --target native --deny-warn
           moon test --target native --deny-warn
+
+      - name: Replay acceptance scenario
+        run: moon run cmd/main -- verify examples/payment/faultcanvas.json examples/payment/acceptance-suite.json
 
       - name: Validate publication package
         run: moon package --list

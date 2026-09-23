@@ -9,6 +9,7 @@ import {
   "zkc-long/faultcanvas/observe",
   "zkc-long/faultcanvas/report",
   "zkc-long/faultcanvas/runtime",
+  "zkc-long/faultcanvas/verify",
 }
 
 pkgtype(kind: "executable")
