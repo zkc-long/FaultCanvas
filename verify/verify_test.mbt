@@ -30,9 +30,9 @@ let valid_suite =
 
 ///|
 test "parses and replays a stateful acceptance suite deterministically" {
-  let suite = parse(valid_suite).unwrap()
-  let first = run(payment_config(), suite)
-  let second = run(payment_config(), suite)
+  let suite = @verify.parse(valid_suite).unwrap()
+  let first = @verify.run(payment_config(), suite)
+  let second = @verify.run(payment_config(), suite)
   assert_eq(first, second)
   assert_eq(first.passed, 3)
   assert_eq(first.failed, 0)
@@ -45,7 +45,7 @@ test "parses and replays a stateful acceptance suite deterministically" {
 
 ///|
 test "keeps scenario state isolated by the configured session header" {
-  let suite = parse(
+  let suite = @verify.parse(
     (
       #|{"version":1,"steps":[
       #|{"id":"a1","request":{"method":"POST","path":"/payments","headers":[{"name":"X-Checkout-Id","value":"a"}]},"expect":{"phase_after":"degraded"}},
@@ -54,7 +54,7 @@ test "keeps scenario state isolated by the configured session header" {
       #|{"id":"b2","request":{"method":"POST","path":"/payments","headers":[{"name":"X-Checkout-Id","value":"b"}]},"expect":{"phase_after":"healthy"}}]}
     ),
   ).unwrap()
-  let report = run(payment_config(), suite)
+  let report = @verify.run(payment_config(), suite)
   assert_eq(report.failed, 0)
   assert_eq(report.steps[1].phase_before, "degraded")
   assert_eq(report.steps[3].phase_after, "healthy")
@@ -62,12 +62,12 @@ test "keeps scenario state isolated by the configured session header" {
 
 ///|
 test "reports assertion mismatches without exposing response bodies" {
-  let suite = parse(
+  let suite = @verify.parse(
     (
       #|{"version":1,"steps":[{"id":"wrong-status","request":{"method":"POST","path":"/payments"},"expect":{"status":200,"body_contains":"missing"}}]}
     ),
   ).unwrap()
-  let report = run(payment_config(), suite)
+  let report = @verify.run(payment_config(), suite)
   assert_eq(report.passed, 0)
   assert_eq(report.failed, 1)
   assert_true(report.to_text().contains("status expected=200 actual=503"))
@@ -81,15 +81,18 @@ test "reports assertion mismatches without exposing response bodies" {
 
 ///|
 test "rejects malformed suites, duplicate ids and invalid statuses" {
-  assert_eq(parse("{"), Err(InvalidJson))
-  assert_eq(parse("{\"version\":2,\"steps\":[{}]}"), Err(UnsupportedVersion(2)))
-  assert_eq(parse("{\"version\":1,\"steps\":[]}"), Err(EmptySuite))
+  assert_eq(@verify.parse("{"), Err(InvalidJson))
   assert_eq(
-    parse("{\"version\":1,\"upstream_status\":99,\"steps\":[{}]}"),
+    @verify.parse("{\"version\":2,\"steps\":[{}]}"),
+    Err(UnsupportedVersion(2)),
+  )
+  assert_eq(@verify.parse("{\"version\":1,\"steps\":[]}"), Err(EmptySuite))
+  assert_eq(
+    @verify.parse("{\"version\":1,\"upstream_status\":99,\"steps\":[{}]}"),
     Err(InvalidUpstreamStatus(99)),
   )
   assert_eq(
-    parse(
+    @verify.parse(
       "{\"version\":1,\"steps\":[{\"id\":\"same\",\"request\":{\"method\":\"GET\",\"path\":\"/\"}},{\"id\":\"same\",\"request\":{\"method\":\"GET\",\"path\":\"/\"}}]}",
     ),
     Err(DuplicateStepId("same")),
@@ -99,13 +102,13 @@ test "rejects malformed suites, duplicate ids and invalid statuses" {
 ///|
 test "rejects invalid expected status and negative delay assertion" {
   assert_eq(
-    parse(
+    @verify.parse(
       "{\"version\":1,\"steps\":[{\"id\":\"bad\",\"request\":{\"method\":\"GET\",\"path\":\"/\"},\"expect\":{\"status\":700}}]}",
     ),
     Err(ExpectedInteger("expect.status (100..599)")),
   )
   assert_eq(
-    parse(
+    @verify.parse(
       "{\"version\":1,\"steps\":[{\"id\":\"bad\",\"request\":{\"method\":\"GET\",\"path\":\"/\"},\"expect\":{\"delay_ms\":-1}}]}",
     ),
     Err(ExpectedInteger("expect.delay_ms (must be non-negative)")),
@@ -115,7 +118,7 @@ test "rejects invalid expected status and negative delay assertion" {
 ///|
 test "rejects unknown outcome assertions before replay" {
   assert_eq(
-    parse(
+    @verify.parse(
       "{\"version\":1,\"steps\":[{\"id\":\"bad\",\"request\":{\"method\":\"GET\",\"path\":\"/\"},\"expect\":{\"outcome\":\"timeout\"}}]}",
     ),
     Err(InvalidOutcome("timeout")),

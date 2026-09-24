@@ -30,7 +30,7 @@ fn catalog_request(session : String) -> @core.HttpRequest {
 
 ///|
 test "decisions preserve the two-failure then recovery sequence" {
-  let engine = Engine::new(retry_config())
+  let engine = @runtime.Engine::new(retry_config())
   let first = engine.decide(catalog_request("a"))
   assert_eq(first.rule_id, Some("fail"))
   assert_eq(first.phase_before, "degraded")
@@ -45,7 +45,7 @@ test "decisions preserve the two-failure then recovery sequence" {
 
 ///|
 test "sessions and unmatched requests do not interfere" {
-  let engine = Engine::new(retry_config())
+  let engine = @runtime.Engine::new(retry_config())
   ignore(engine.decide(catalog_request("a")))
   let other = engine.decide(catalog_request("b"))
   assert_eq(other.rule_id, Some("fail"))

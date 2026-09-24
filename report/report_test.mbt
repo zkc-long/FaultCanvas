@@ -11,7 +11,7 @@ fn decision() -> @runtime.Decision {
 
 ///|
 test "journal is bounded and reports stable text" {
-  let journal = Journal::new(2)
+  let journal = @report.Journal::new(2)
   journal.record(decision(), Response(503), 120)
   journal.record(decision(), Aborted("socket closed"), 2)
   journal.record(decision(), Response(200), 4)
@@ -27,7 +27,7 @@ test "journal is bounded and reports stable text" {
 
 ///|
 test "journal produces machine-readable JSON" {
-  let journal = Journal::new(1)
+  let journal = @report.Journal::new(1)
   journal.record(decision(), Response(503), 120)
   assert_eq(
     journal.to_json(),
@@ -37,7 +37,7 @@ test "journal produces machine-readable JSON" {
 
 ///|
 test "policy-aware reports redact failure details" {
-  let journal = Journal::new(2)
+  let journal = @report.Journal::new(2)
   let decision = @runtime.Decision::fallback("session-1", "phase")
   journal.record(decision, UpstreamFailure("token=secret-value"), 12)
   assert_true(
