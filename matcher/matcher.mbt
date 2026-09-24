@@ -177,6 +177,42 @@ pub(all) struct RuleCandidate {
 } derive(Debug, Eq)
 
 ///|
+pub extend PathPattern with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend PathPattern with Eq::{not_equal, equal}
+
+///|
+pub extend FieldPattern with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend FieldPattern with Eq::{not_equal, equal}
+
+///|
+pub extend RequestPattern with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend RequestPattern with Eq::{not_equal, equal}
+
+///|
+pub extend Mismatch with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend Mismatch with Eq::{not_equal, equal}
+
+///|
+pub extend MatchEvaluation with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend MatchEvaluation with Eq::{not_equal, equal}
+
+///|
+pub extend RuleCandidate with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend RuleCandidate with Eq::{not_equal, equal}
+
+///|
 pub fn RuleCandidate::new(
   id : String,
   priority : Int,

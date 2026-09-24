@@ -247,3 +247,21 @@ pub fn Policy::filter_response(
   )].to_owned()
   @core.HttpResponse::new(response.status, headers, body)
 }
+
+///|
+pub extend Policy with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend Policy with Eq::{not_equal, equal}
+
+///|
+pub extend PolicyError with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend PolicyError with Eq::{not_equal, equal}
+
+///|
+pub extend HeaderDisposition with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend HeaderDisposition with Eq::{not_equal, equal}

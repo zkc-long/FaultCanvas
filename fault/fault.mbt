@@ -42,6 +42,30 @@ pub(all) enum FaultError {
 } derive(Debug, Eq)
 
 ///|
+pub extend FaultAction with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend FaultAction with Eq::{not_equal, equal}
+
+///|
+pub extend ResponseSource with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ResponseSource with Eq::{not_equal, equal}
+
+///|
+pub extend FaultPlan with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend FaultPlan with Eq::{not_equal, equal}
+
+///|
+pub extend FaultError with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend FaultError with Eq::{not_equal, equal}
+
+///|
 fn source_is_abort(source : ResponseSource) -> Bool {
   match source {
     ConnectionAbort(_) => true

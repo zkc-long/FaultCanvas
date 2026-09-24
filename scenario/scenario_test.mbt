@@ -1,7 +1,7 @@
 ///|
 test "hit counters advance a phase deterministically" {
-  let store = StateStore::new("degraded").unwrap()
-  let transitions = [Transition::new("degraded", "healthy", OnHit(2))]
+  let store = @scenario.StateStore::new("degraded").unwrap()
+  let transitions = [@scenario.Transition::new("degraded", "healthy", OnHit(2))]
   let first = store.record_hit("checkout", transitions).unwrap()
   assert_eq(first.before.phase, "degraded")
   assert_eq(first.after, {
@@ -21,8 +21,8 @@ test "hit counters advance a phase deterministically" {
 
 ///|
 test "sessions are isolated and resettable" {
-  let store = StateStore::new("cold").unwrap()
-  let transitions = [Transition::new("cold", "warm", Always)]
+  let store = @scenario.StateStore::new("cold").unwrap()
+  let transitions = [@scenario.Transition::new("cold", "warm", Always)]
   ignore(store.record_hit("tenant-a", transitions))
   assert_eq(store.snapshot("tenant-a").unwrap().phase, "warm")
   assert_eq(store.snapshot("tenant-b").unwrap().phase, "cold")
@@ -34,12 +34,14 @@ test "sessions are isolated and resettable" {
 
 ///|
 test "transition validation rejects unusable thresholds" {
-  let store = StateStore::new("ready").unwrap()
+  let store = @scenario.StateStore::new("ready").unwrap()
   assert_eq(
-    store.record_hit("demo", [Transition::new("ready", "done", AtLeast(0))]),
+    store.record_hit("demo", [
+      @scenario.Transition::new("ready", "done", AtLeast(0)),
+    ]),
     Err(InvalidHitThreshold(0)),
   )
-  match StateStore::new("  ") {
+  match @scenario.StateStore::new("  ") {
     Err(error) => assert_eq(error, EmptyInitialPhase)
     Ok(_) => fail("empty phase must be rejected")
   }
