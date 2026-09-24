@@ -1,1 +1,4 @@
 // FaultCanvas transport-independent HTTP domain model.
+import {
+  "moonbitlang/core/debug",
+}

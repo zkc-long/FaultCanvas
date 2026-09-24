@@ -49,7 +49,37 @@ struct SessionState {
   session : String
   phase : String
   hits_in_phase : Int
-} derive(Debug, Eq)
+}
+
+///|
+pub extend TransitionGuard with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend TransitionGuard with Eq::{not_equal, equal}
+
+///|
+pub extend Transition with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend Transition with Eq::{not_equal, equal}
+
+///|
+pub extend ScenarioError with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ScenarioError with Eq::{not_equal, equal}
+
+///|
+pub extend ScenarioSnapshot with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ScenarioSnapshot with Eq::{not_equal, equal}
+
+///|
+pub extend ScenarioAdvance with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ScenarioAdvance with Eq::{not_equal, equal}
 
 ///|
 /// StateStore intentionally uses a small ordered collection: scenario sessions

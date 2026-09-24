@@ -101,6 +101,42 @@ pub(all) enum ValidationError {
 } derive(Debug, Eq)
 
 ///|
+pub extend Header with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend Header with Eq::{not_equal, equal}
+
+///|
+pub extend QueryParam with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend QueryParam with Eq::{not_equal, equal}
+
+///|
+pub extend HttpRequest with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend HttpRequest with Eq::{not_equal, equal}
+
+///|
+pub extend HttpResponse with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend HttpResponse with Eq::{not_equal, equal}
+
+///|
+pub extend RequestLimits with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend RequestLimits with Eq::{not_equal, equal}
+
+///|
+pub extend ValidationError with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ValidationError with Eq::{not_equal, equal}
+
+///|
 pub fn HttpRequest::validate(
   self : HttpRequest,
   limits : RequestLimits,
