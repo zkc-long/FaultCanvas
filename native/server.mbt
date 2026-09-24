@@ -56,6 +56,8 @@ fn reason_for(status : Int) -> String {
     400 => "Bad Request"
     502 => "Bad Gateway"
     503 => "Service Unavailable"
+    413 => "Payload Too Large"
+    431 => "Request Header Fields Too Large"
     _ => "FaultCanvas"
   }
 }
@@ -77,7 +79,152 @@ async fn send_core_response(
 ) -> Unit {
   connection
   ..send_response(response.status, reason_for(response.status))
-  .write(response.body)
+  ..write(response.body)
+  .end_response()
+}
+
+///|
+const BODY_READ_CHUNK_SIZE : Int = 4096
+
+///|
+const MAX_BODY_BYTES : Int = 2_147_483_647
+
+///|
+fn utf16_units_in(bytes : Bytes) -> Int {
+  for byte in bytes; units = 0 {
+    let value = byte.to_int()
+    if value >= 0x80 && value <= 0xBF {
+      continue units
+    }
+    continue units + (if value >= 0xF0 && value <= 0xF4 { 2 } else { 1 })
+  } nobreak {
+    units
+  }
+}
+
+///|
+fn missing_utf8_suffix(bytes : Bytes) -> Int {
+  let start = (bytes.length() - 4).clamp(min=0, max=bytes.length())
+  let mut index = bytes.length() - 1
+  let mut continuation_bytes = 0
+  while index >= start {
+    let value = bytes[index].to_int()
+    if value >= 0x80 && value <= 0xBF {
+      continuation_bytes += 1
+      index -= 1
+    } else {
+      let expected = if value >= 0xC2 && value <= 0xDF {
+        2
+      } else if value >= 0xE0 && value <= 0xEF {
+        3
+      } else if value >= 0xF0 && value <= 0xF4 {
+        4
+      } else {
+        1
+      }
+      let present = continuation_bytes + 1
+      return if expected > present { expected - present } else { 0 }
+    }
+  }
+  0
+}
+
+///|
+/// Read at most max_chars UTF-16 code units plus one fixed-size chunk. The
+/// byte ceiling also bounds malformed UTF-8 input, which cannot be counted as
+/// characters safely until it has been decoded.
+async fn[R : @io.Reader] read_bounded_body(
+  reader : R,
+  max_chars : Int,
+  complete_utf8_suffix? : Bool = true,
+) -> (Bytes, Bool) {
+  let buffer = Buffer()
+  let byte_limit = if max_chars > MAX_BODY_BYTES / 3 {
+    MAX_BODY_BYTES
+  } else {
+    max_chars * 3
+  }
+  let mut chars = 0
+  let mut byte_count = 0
+  let mut oversized = false
+  while !oversized {
+    match reader.read_some(max_len=BODY_READ_CHUNK_SIZE) {
+      None => break
+      Some(chunk) => {
+        let chunk_chars = utf16_units_in(chunk)
+        buffer.write_bytes(chunk)
+        if chunk_chars > max_chars - chars ||
+          chunk.length() > byte_limit - byte_count {
+          oversized = true
+        } else {
+          chars += chunk_chars
+          byte_count += chunk.length()
+        }
+      }
+    }
+  }
+  if oversized && complete_utf8_suffix {
+    let mut missing = missing_utf8_suffix(buffer.contents())
+    while missing > 0 {
+      match reader.read_some(max_len=missing) {
+        None => break
+        Some(chunk) => {
+          buffer.write_bytes(chunk)
+          missing = missing_utf8_suffix(buffer.contents())
+        }
+      }
+    }
+  }
+  (buffer.contents(), oversized)
+}
+
+///|
+fn upstream_target(
+  upstream : String,
+  request_path : String,
+) -> (String, String) {
+  let protocol_end = upstream.find("://").unwrap()
+  let authority_start = protocol_end + 3
+  let remainder = upstream[authority_start:]
+  match remainder.find("/") {
+    None => (upstream, request_path)
+    Some(path_start) => {
+      let origin = upstream[:authority_start + path_start].to_owned()
+      let base_path = remainder[path_start:]
+      let prefix = if base_path == "/" {
+        ""
+      } else if base_path.has_suffix("/") {
+        base_path[:base_path.length() - 1].to_owned()
+      } else {
+        base_path.to_owned()
+      }
+      let suffix = if request_path.has_prefix("/") {
+        request_path
+      } else {
+        "/" + request_path
+      }
+      (origin, prefix + suffix)
+    }
+  }
+}
+
+///|
+async fn forward_upstream(
+  config : @config.Config,
+  request : @http.Request,
+  body : Bytes,
+) -> (@http.Response, String) {
+  let (origin, path) = upstream_target(config.upstream, request.path)
+  let client = @http.Client::Client(origin, headers=request.headers)
+  defer client.close()
+  client.request(request.meth, path)
+  client.write(body)
+  let response = client.end_request()
+  let (response_body, _) = read_bounded_body(
+    client,
+    config.policy.max_response_body_chars(),
+  )
+  (response, @utf8.decode(response_body))
 }
 
 ///|
@@ -89,8 +236,22 @@ async fn handle(
   body_reader : &@io.Reader,
   connection : @http.ServerConnection,
 ) -> Unit {
-  let raw_body = body_reader.read_all()
-  let normalized = normalize(request, raw_body.text())
+  let (raw_body, request_body_too_large) = read_bounded_body(
+    body_reader,
+    config.policy.max_request_body_chars(),
+    complete_utf8_suffix=false,
+  )
+  if request_body_too_large {
+    let decision = @runtime.Decision::fallback("invalid", "invalid")
+    send_core_response(
+      connection,
+      @core.HttpResponse::new(413, [], "request rejected by policy"),
+    )
+    journal.record(decision, @report.Response(413), 0)
+    connection.close()
+    return
+  }
+  let normalized = normalize(request, @utf8.decode(raw_body))
   match config.policy.validate_request(normalized) {
     Err(error) => {
       let status = policy_error_status(error)
@@ -137,11 +298,8 @@ async fn handle(
       )
     }
     @fault.Upstream => {
-      let (response, upstream_body) = @http.request(
-        config.upstream + request.path,
-        request.meth,
-        request.headers,
-        raw_body,
+      let (response, upstream_body) = forward_upstream(
+        config, request, raw_body,
       ) catch {
         _ => {
           let failure = @core.HttpResponse::new(502, [], "upstream unavailable")
@@ -155,7 +313,7 @@ async fn handle(
         }
       }
       let transformed = decision.plan.transform_response(
-        @core.HttpResponse::new(response.code, [], upstream_body.text()),
+        @core.HttpResponse::new(response.code, [], upstream_body),
       )
       let transformed = config.policy.filter_response(transformed)
       send_core_response(connection, transformed)

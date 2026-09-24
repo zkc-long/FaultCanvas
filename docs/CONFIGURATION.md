@@ -17,6 +17,12 @@ fault-plan error rejects the complete configuration before a listener starts.
 
 ## Safety policy
 
+The native proxy enforces both body limits while reading fixed-size chunks. An
+oversized request receives a 413 response and its connection is closed before
+the request is matched or forwarded. Oversized upstream responses are read only
+through the configured response limit plus one chunk, then filtered to the
+configured cap.
+
 The optional `limits` object accepts `max_headers`,
 `max_request_body_chars`, `max_response_body_chars` and `max_events`. Values
 default to 128 headers, 1 MiB request/response bodies and 1000 retained events.
