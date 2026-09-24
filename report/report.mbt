@@ -14,6 +14,18 @@ pub(all) struct Event {
 } derive(Debug, Eq)
 
 ///|
+pub extend Outcome with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend Outcome with Eq::{not_equal, equal}
+
+///|
+pub extend Event with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend Event with Eq::{not_equal, equal}
+
+///|
 pub struct Journal {
   capacity : Int
   mut next_sequence : Int

@@ -17,7 +17,7 @@ let complete_config =
 
 ///|
 test "decodes a versioned stateful service-virtualization configuration" {
-  let config = parse(complete_config).unwrap()
+  let config = @config.parse(complete_config).unwrap()
   assert_eq(config.listen, "127.0.0.1:8080")
   assert_eq(config.initial_phase, "degraded")
   assert_eq(config.transitions.length(), 1)
@@ -32,13 +32,15 @@ test "decodes a versioned stateful service-virtualization configuration" {
 
 ///|
 test "rejects invalid JSON versions and duplicate rule identifiers" {
-  assert_eq(parse("{"), Err(InvalidJson))
+  assert_eq(@config.parse("{"), Err(InvalidJson))
   assert_eq(
-    parse("{\"version\":2,\"upstream\":\"http://127.0.0.1\",\"rules\":[]}"),
+    @config.parse(
+      "{\"version\":2,\"upstream\":\"http://127.0.0.1\",\"rules\":[]}",
+    ),
     Err(UnsupportedVersion(2)),
   )
   assert_eq(
-    parse(
+    @config.parse(
       (
         #|{"version":1,"upstream":"http://127.0.0.1","rules":[
         #|{"id":"same","actions":[]},{"id":"same","actions":[]}]}
@@ -51,11 +53,13 @@ test "rejects invalid JSON versions and duplicate rule identifiers" {
 ///|
 test "rejects unsupported upstream schemes and invalid action plans" {
   assert_eq(
-    parse("{\"version\":1,\"upstream\":\"https://example.test\",\"rules\":[]}"),
+    @config.parse(
+      "{\"version\":1,\"upstream\":\"https://example.test\",\"rules\":[]}",
+    ),
     Err(InvalidUpstream("https://example.test")),
   )
   match
-    parse(
+    @config.parse(
       (
         #|{"version":1,"upstream":"http://127.0.0.1","rules":[
         #|{"id":"broken","actions":[{"type":"abort","reason":"x"},{"type":"corrupt","suffix":"!"}]}]}
@@ -68,7 +72,7 @@ test "rejects unsupported upstream schemes and invalid action plans" {
 
 ///|
 test "decodes custom limits and rejects public listeners" {
-  let config = parse(
+  let config = @config.parse(
     (
       #|{"version":1,"upstream":"http://127.0.0.1","limits":{"max_headers":4,"max_request_body_chars":64,"max_response_body_chars":32,"max_events":9},"security":{"redact_headers":["X-Customer-Secret"]},"rules":[]}
     ),
@@ -80,7 +84,7 @@ test "decodes custom limits and rejects public listeners" {
     @policy.Redact,
   )
   match
-    parse(
+    @config.parse(
       (
         #|{"version":1,"listen":"0.0.0.0:8080","upstream":"http://127.0.0.1","rules":[]}
       ),

@@ -1,4 +1,5 @@
 import {
+  "moonbitlang/core/debug",
   "zkc-long/faultcanvas/core",
   "zkc-long/faultcanvas/config",
   "zkc-long/faultcanvas/fault",

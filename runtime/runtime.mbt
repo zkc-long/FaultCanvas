@@ -8,6 +8,12 @@ pub(all) struct Decision {
 } derive(Debug, Eq)
 
 ///|
+pub extend Decision with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend Decision with Eq::{not_equal, equal}
+
+///|
 pub fn Decision::fallback(session : String, phase : String) -> Decision {
   {
     session,

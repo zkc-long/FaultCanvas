@@ -59,6 +59,36 @@ pub(all) struct Report {
 } derive(Debug, Eq)
 
 ///|
+pub extend Step with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend Step with Eq::{not_equal, equal}
+
+///|
+pub extend Suite with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend Suite with Eq::{not_equal, equal}
+
+///|
+pub extend SuiteError with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend SuiteError with Eq::{not_equal, equal}
+
+///|
+pub extend StepResult with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend StepResult with Eq::{not_equal, equal}
+
+///|
+pub extend Report with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend Report with Eq::{not_equal, equal}
+
+///|
 fn object_at(
   value : Json,
   path : String,

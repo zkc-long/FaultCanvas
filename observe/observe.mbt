@@ -7,6 +7,12 @@ pub(all) struct EventFilter {
 } derive(Debug, Eq)
 
 ///|
+pub extend EventFilter with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend EventFilter with Eq::{not_equal, equal}
+
+///|
 pub fn EventFilter::any() -> EventFilter {
   { rule_id: None, session: None, outcome: None, min_elapsed_ms: None, }
 }
@@ -69,6 +75,12 @@ pub(all) struct Stats {
   p50_elapsed_ms : Int
   p95_elapsed_ms : Int
 } derive(Debug, Eq)
+
+///|
+pub extend Stats with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend Stats with Eq::{not_equal, equal}
 
 ///|
 fn outcome_name(outcome : @report.Outcome) -> String {
