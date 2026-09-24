@@ -19,7 +19,7 @@ async test "loopback proxy serves faults and forwards unmatched HTTP requests" {
     let config = proxy_config("http://127.0.0.1:\{upstream.addr.port()}")
     let proxy = @http.Server(@socket.Addr::parse("127.0.0.1:0"))
     let journal = @report.Journal::new(10)
-    root.spawn_bg(no_wait=true, () => run(proxy, config, journal))
+    root.spawn_bg(no_wait=true, () => @native.run(proxy, config, journal))
     @async.sleep(40)
     let (stub_response, stub_body) = @http.get(
       "http://127.0.0.1:\{proxy.addr.port()}/stub",
