@@ -1,6 +1,6 @@
 ///|
 test "safe defaults classify secrets and hop-by-hop headers" {
-  let policy = Policy::safe_defaults()
+  let policy = @policy.Policy::safe_defaults()
   assert_eq(policy.header_disposition("Authorization"), Redact)
   assert_eq(policy.header_disposition("X-Session-Token"), Redact)
   assert_eq(policy.header_disposition("Connection"), Drop)
@@ -10,7 +10,7 @@ test "safe defaults classify secrets and hop-by-hop headers" {
 
 ///|
 test "custom limits reject oversized requests" {
-  let policy = Policy::new(2, 4, 8, 3, ["X-Debug-Secret"]).unwrap()
+  let policy = @policy.Policy::new(2, 4, 8, 3, ["X-Debug-Secret"]).unwrap()
   let request = @core.HttpRequest::new(
     "POST",
     "/upload",
@@ -26,7 +26,7 @@ test "custom limits reject oversized requests" {
 
 ///|
 test "response filtering truncates and removes unsafe headers" {
-  let policy = Policy::new(8, 8, 4, 2, []).unwrap()
+  let policy = @policy.Policy::new(8, 8, 4, 2, []).unwrap()
   let response = policy.filter_response(
     @core.HttpResponse::new(
       200,
@@ -44,7 +44,7 @@ test "response filtering truncates and removes unsafe headers" {
 
 ///|
 test "listen policy only accepts loopback addresses" {
-  let policy = Policy::safe_defaults()
+  let policy = @policy.Policy::safe_defaults()
   assert_eq(policy.listen_is_safe("127.0.0.1:8080"), Ok(()))
   assert_eq(policy.listen_is_safe("localhost:8080"), Ok(()))
   assert_eq(policy.listen_is_safe("[::1]:8080"), Ok(()))
@@ -56,13 +56,16 @@ test "listen policy only accepts loopback addresses" {
 
 ///|
 test "invalid limits are rejected before policy construction" {
-  assert_eq(Policy::new(0, 1, 1, 1, []), Err(InvalidLimit("max_headers", 0)))
-  assert_eq(Policy::new(1, 1, 1, 1, ["  "]), Err(EmptyRedactionHeader))
+  assert_eq(
+    @policy.Policy::new(0, 1, 1, 1, []),
+    Err(InvalidLimit("max_headers", 0)),
+  )
+  assert_eq(@policy.Policy::new(1, 1, 1, 1, ["  "]), Err(EmptyRedactionHeader))
 }
 
 ///|
 test "free-form error details redact credential markers" {
-  let policy = Policy::safe_defaults()
+  let policy = @policy.Policy::safe_defaults()
   assert_eq(policy.redact_free_text("timeout after 20ms"), "timeout after 20ms")
   assert_eq(
     policy.redact_free_text("upstream token=abc123"),

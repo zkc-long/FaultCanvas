@@ -11,11 +11,11 @@ fn checkout_request() -> @core.HttpRequest {
 
 ///|
 test "matches method path query header and body" {
-  let pattern = RequestPattern::new(
+  let pattern = @matcher.RequestPattern::new(
     Some("POST"),
     Some(Exact("/api/checkout")),
-    [FieldPattern::new("region", "cn")],
-    [FieldPattern::new("x-tenant", "demo")],
+    [@matcher.FieldPattern::new("region", "cn")],
+    [@matcher.FieldPattern::new("x-tenant", "demo")],
     Some("\"total\":42"),
   )
   let result = pattern.evaluate(checkout_request())
@@ -26,7 +26,7 @@ test "matches method path query header and body" {
 
 ///|
 test "returns a useful mismatch" {
-  let pattern = RequestPattern::new(
+  let pattern = @matcher.RequestPattern::new(
     Some("GET"),
     Some(Prefix("/api/")),
     [],
@@ -41,26 +41,35 @@ test "returns a useful mismatch" {
 
 ///|
 test "selection is deterministic by priority specificity then order" {
-  let broad = RuleCandidate::new(
+  let broad = @matcher.RuleCandidate::new(
     "broad",
     10,
-    RequestPattern::new(Some("POST"), Some(Prefix("/api/")), [], [], None),
-  )
-  let exact = RuleCandidate::new(
-    "exact",
-    10,
-    RequestPattern::new(
+    @matcher.RequestPattern::new(
       Some("POST"),
-      Some(Exact("/api/checkout")),
-      [FieldPattern::new("region", "cn")],
+      Some(Prefix("/api/")),
+      [],
       [],
       None,
     ),
   )
-  let lower = RuleCandidate::new(
+  let exact = @matcher.RuleCandidate::new(
+    "exact",
+    10,
+    @matcher.RequestPattern::new(
+      Some("POST"),
+      Some(Exact("/api/checkout")),
+      [@matcher.FieldPattern::new("region", "cn")],
+      [],
+      None,
+    ),
+  )
+  let lower = @matcher.RuleCandidate::new(
     "lower",
     1,
-    RequestPattern::new(None, None, [], [], None),
+    @matcher.RequestPattern::new(None, None, [], [], None),
   )
-  assert_eq(select_index([broad, exact, lower], checkout_request()), Some(1))
+  assert_eq(
+    @matcher.select_index([broad, exact, lower], checkout_request()),
+    Some(1),
+  )
 }

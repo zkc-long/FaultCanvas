@@ -1,6 +1,6 @@
 ///|
 test "builds an ordered plan around a stub response" {
-  let plan = build([
+  let plan = @fault.build([
     Delay(120),
     Stub(@core.HttpResponse::new(201, [], "accepted")),
     OverrideStatus(503),
@@ -17,18 +17,21 @@ test "builds an ordered plan around a stub response" {
 
 ///|
 test "delay-only rules default to passthrough" {
-  let plan = build([Delay(25)]).unwrap()
+  let plan = @fault.build([Delay(25)]).unwrap()
   assert_eq(plan.source, Upstream)
   assert_eq(plan.delay_ms, 25)
 }
 
 ///|
 test "rejects unsafe and conflicting action combinations" {
-  assert_eq(build([Delay(-1)]), Err(NegativeDelay(-1)))
+  assert_eq(@fault.build([Delay(-1)]), Err(NegativeDelay(-1)))
   assert_eq(
-    build([Stub(@core.HttpResponse::new(200, [], "ok")), PassThrough]),
+    @fault.build([Stub(@core.HttpResponse::new(200, [], "ok")), PassThrough]),
     Err(MultipleResponseSources),
   )
-  assert_eq(build([Abort("drop"), Corrupt("noise")]), Err(TransformAfterAbort))
-  assert_eq(build([OverrideStatus(700)]), Err(InvalidStatus(700)))
+  assert_eq(
+    @fault.build([Abort("drop"), Corrupt("noise")]),
+    Err(TransformAfterAbort),
+  )
+  assert_eq(@fault.build([OverrideStatus(700)]), Err(InvalidStatus(700)))
 }

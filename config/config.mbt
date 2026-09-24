@@ -561,3 +561,21 @@ pub fn parse(text : String) -> Result[Config, ConfigError] {
     policy,
   })
 }
+
+///|
+pub extend ConfiguredRule with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ConfiguredRule with Eq::{not_equal, equal}
+
+///|
+pub extend Config with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend Config with Eq::{not_equal, equal}
+
+///|
+pub extend ConfigError with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+pub extend ConfigError with Eq::{not_equal, equal}
